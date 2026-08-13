@@ -9,8 +9,8 @@ def fetch_newsdata() -> list:
         log_error("Відсутній NEWSDATA_API_KEY")
         return []
 
-    # Запити згідно з ТЗ
-    query = "AI OR \"Artificial Intelligence\" OR \"AI Agents\" OR \"AI Automation\" OR No-Code OR \"Generative AI\" OR \"AI Startup\""
+    # Запити згідно з ТЗ (укорочено, щоб влізти в ліміт довжини q на безкоштовному плані NewsData.io)
+    query = "AI OR \"Artificial Intelligence\" OR \"AI Agents\" OR \"Generative AI\" OR \"AI Startup\""
     url = "https://newsdata.io/api/1/news"
     params = {
         "apikey": api_key,
