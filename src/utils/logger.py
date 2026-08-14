@@ -1,10 +1,16 @@
-﻿import datetime
+import logging
+import sys
 
-def _get_timestamp():
-    return datetime.datetime.now().strftime('%H:%M:%S')
+# Налаштування формату та виводу логів
+logger = logging.getLogger("AI.Flow-UA")
+logger.setLevel(logging.INFO)
 
-def log_info(message: str):
-    print(f"[{_get_timestamp()}] {message}")
+if not logger.handlers:
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter('[%(asctime)s] %(message)s', datefmt='%H:%M:%S')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
-def log_error(message: str):
-    print(f"[{_get_timestamp()}] ERROR: {message}")
+def get_logger():
+    """Повертає вже налаштований екземпляр логера."""
+    return logger
