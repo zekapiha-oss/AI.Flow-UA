@@ -18,3 +18,23 @@ def get_ai_client() -> OpenAI:
         api_key=api_key,
         base_url=base_url
     )
+
+
+def ask_deepseek(prompt: str, system_prompt: str = "You are a helpful assistant.", **kwargs) -> str:
+    """
+    Обгортка для відправки текстових запитів до DeepSeek API (використовується в analyst.py).
+    """
+    client = get_ai_client()
+    
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+
+    response = client.chat.completions.create(
+        model="deepseek-chat",
+        messages=messages,
+        temperature=kwargs.get("temperature", 0.3)
+    )
+    
+    return response.choices[0].message.content.strip()
