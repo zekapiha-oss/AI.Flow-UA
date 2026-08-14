@@ -1,6 +1,12 @@
 import os
+import re
 import requests
 from src.utils.logger import logger
+
+
+def _strip_html_tags(text: str) -> str:
+    """Прибирає HTML-теги форматування для чистого текстового фолбеку."""
+    return re.sub(r"</?(b|i|u|a)[^>]*>", "", text)
 
 def send_telegram_message(text: str) -> bool:
     """
@@ -23,7 +29,7 @@ def send_telegram_message(text: str) -> bool:
     payload = {
         "chat_id": chat_id,
         "text": text,
-        "parse_mode": "Markdown",
+        "parse_mode": "HTML",
         "disable_web_page_preview": False
     }
 
@@ -33,11 +39,13 @@ def send_telegram_message(text: str) -> bool:
         if response.status_code == 200:
             return True
 
-        # Спроба фолбеку: якщо Telegram повернув помилку через синтаксис Markdown,
+        # Спроба фолбеку: якщо Telegram повернув помилку через синтаксис HTML
+        # (наприклад, модель залишила незакритий тег або зайвий символ < чи &),
         # надсилаємо як простий текст без форматування.
-        logger.warning(f"Не вдалося надіслати з Markdown (код {response.status_code}). Пробуємо чистий текст...")
+        logger.warning(f"Не вдалося надіслати з HTML (код {response.status_code}). Пробуємо чистий текст...")
         payload.pop("parse_mode", None)
-        
+        payload["text"] = _strip_html_tags(text)
+
         fallback_response = requests.post(url, json=payload, timeout=10)
         if fallback_response.status_code == 200:
             return True
