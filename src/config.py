@@ -1,4 +1,4 @@
-﻿import os
+import os
 
 DRY_RUN = os.getenv("DRY_RUN", "true").lower() == "true"
 MAX_MESSAGE_LENGTH = 777
