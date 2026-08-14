@@ -2,7 +2,7 @@ import os
 from src.ai.client import get_ai_client
 from src.utils.logger import logger
 
-def generate_editor_post(text_content: str) -> str:
+def generate_post(text_content: str) -> str:
     """
     Генерує готовий пост для Telegram на основі переданого тексту/новини.
     """
@@ -30,3 +30,6 @@ def generate_editor_post(text_content: str) -> str:
     except Exception as e:
         logger.error(f"Помилка генерації поста через Editor: {e}")
         return ""
+
+# Аліас для сумісності
+generate_editor_post = generate_post
