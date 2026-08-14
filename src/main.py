@@ -46,7 +46,7 @@ def run_pipeline():
         formatted_post = format_post(post_text, article_url=url) if callable(format_post) else post_text
 
         # 5. Проверка лимита символов (<= 777 символов)
-        if not validate_character_limit(formatted_post, limit=777):
+        if not validate_character_limit(formatted_post, limit=999):
             continue
 
         # 6. Публикация в Telegram
