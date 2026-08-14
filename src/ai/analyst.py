@@ -1,25 +1,51 @@
+import os
+import re
 from src.ai.client import ask_deepseek
-from src.utils.logger import log_info
+from src.utils.logger import logger
 
-def analyze_news(article_text: str) -> dict:
+def analyze_news(article: dict) -> int:
     """
-    Аналізує подію, визначає факти та наслідки.
-    Повертає оцінки (0-10): NOVELTY, IMPORTANCE, PRACTICAL, AI_RELEVANCE, UKRAINE, VIRALITY
+    Аналізує важливість та релевантність новини за допомогою DeepSeek Analyst.
+    Повертає числову оцінку (score) від 0 до 500.
     """
-    log_info('Аналіз новини через DeepSeek Analyst...')
-    result = ask_deepseek(article_text, 'analyst.txt')
+    if not isinstance(article, dict):
+        logger.error("Некоректний формат даних новини для аналізу (очікувався dict).")
+        return 0
+
+    title = article.get("title", "")
+    content = article.get("content") or article.get("description") or ""
+
+    # Формуємо чіткий текстовий промпт для моделі (перетворюємо об'єкт у рядок)
+    user_prompt = (
+        f"Заголовок: {title}\n"
+        f"Текст / Опис: {content[:1500]}\n\n"
+        f"Оціни актуальність та цінність цієї новини для AI-спільноти за шкалою від 0 до 500. "
+        f"Поверни ТІЛЬКИ число оцінки (наприклад, 350)."
+    )
+
+    # Читаємо системний промпт із файлу prompts/analyst.txt
+    system_prompt = "You are an AI news analyst. Rate news importance from 0 to 500. Return only the number score."
+    prompt_path = os.path.join("prompts", "analyst.txt")
     
-    if result:
-        # Підрахунок TOTAL_SCORE згідно з ТЗ
-        scores = [
-            result.get('NOVELTY', 0), 
-            result.get('IMPORTANCE', 0),
-            result.get('PRACTICAL', 0), 
-            result.get('AI_RELEVANCE', 0),
-            result.get('UKRAINE', 0), 
-            result.get('VIRALITY', 0)
-        ]
-        result['TOTAL_SCORE'] = sum(scores)
-        log_info(f"Оцінка Analyst: {result['TOTAL_SCORE']} балів")
-        return result
-    return None
+    if os.path.exists(prompt_path):
+        try:
+            with open(prompt_path, "r", encoding="utf-8") as f:
+                system_prompt = f.read()
+        except Exception as e:
+            logger.warning(f"Не вдалося прочитати prompts/analyst.txt: {e}. Використовуємо стандартний промпт.")
+
+    try:
+        response_text = ask_deepseek(user_prompt, system_prompt=system_prompt)
+
+        # Витягуємо перше число з відповіді моделі
+        numbers = re.findall(r'\d+', response_text)
+        if numbers:
+            score = int(numbers[0])
+            return score
+        else:
+            logger.warning(f"Analyst повернув текст без чисел: '{response_text}'. Надаємо оцінку 200.")
+            return 200
+
+    except Exception as e:
+        logger.error(f"Помилка при аналізі новини в Analyst: {e}")
+        return 0
