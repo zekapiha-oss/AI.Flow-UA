@@ -1,19 +1,18 @@
-import re
+from src.utils.logger import logger
 
-def validate_character_limit(message: str, limit: int = 777) -> bool:
-    """Перевіряє, чи не перевищує фінальне повідомлення ліміт (за замовчуванням 777)."""
-    return len(message) <= limit
+MAX_CHARACTER_LIMIT = 777
 
-def validate_hashtags(hashtags: list) -> bool:
-    """Перевірка: тільки англійська мова та від 3 до 6 хештегів."""
-    if not isinstance(hashtags, list):
+def validate_character_limit(text: str, limit: int = MAX_CHARACTER_LIMIT) -> bool:
+    """
+    Перевіряє, чи не перевищує довжина ГОТОВОГО тексту поста встановлений ліміт символів.
+    """
+    if not text:
+        logger.warning("Валідація не пройшла: текст порожній.")
         return False
-    if not (3 <= len(hashtags) <= 6):
+
+    length = len(text)
+    if length > limit:
+        logger.error(f"Перевищено ліміт символів: {length} > {limit}. Пропускаємо.")
         return False
-    
-    # Перевірка, що хештеги складаються лише з англійських літер та цифр
-    english_pattern = re.compile(r'^#[A-Za-z0-9_]+$')
-    for tag in hashtags:
-        if not english_pattern.match(tag):
-            return False
+
     return True
