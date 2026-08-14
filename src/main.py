@@ -34,7 +34,12 @@ def run_pipeline():
         # 3. Генерация текста поста (Editor) напрямую
         logger.info("Генерація посту через DeepSeek Editor...")
         editor_result = generate_post(article)
-        post_text = editor_result.get("text", "")
+        if isinstance(editor_result, dict):
+    post_text = editor_result.get("text", "")
+elif isinstance(editor_result, str):
+    post_text = editor_result
+else:
+    post_text = ""
 
         if not post_text:
             logger.error("Редактор не зміг згенерувати текст поста.")
