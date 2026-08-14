@@ -8,6 +8,7 @@ from src.deduplication.detector import is_duplicate, save_processed_news
 from src.utils.validators import validate_character_limit
 from src.utils.logger import logger
 
+
 def run_pipeline():
     logger.info("--- Запуск AI News Pipeline ---")
 
@@ -22,7 +23,10 @@ def run_pipeline():
 
     for article in all_articles:
         title = article.get("title", "Без заголовка")
-        url = article.get("url", "")
+        # Колектори (newsdata.py, hackernews.py) кладуть посилання під ключем
+        # 'source_url', а не 'url'. Беремо обидва варіанти для сумісності,
+        # інакше url завжди порожній і дедуплікація/лінк у пості не працюють.
+        url = article.get("source_url") or article.get("url", "")
 
         logger.info(f"Обробка новини: {title}")
 
@@ -66,6 +70,7 @@ def run_pipeline():
             logger.error("Помилка публікації в Telegram.")
 
     logger.info(f"--- Пайплайн завершив роботу. Опубліковано постів: {published_count} ---")
+
 
 if __name__ == "__main__":
     run_pipeline()
