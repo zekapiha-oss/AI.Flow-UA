@@ -1,6 +1,21 @@
 import os
+import re
 from src.ai.client import get_ai_client
 from src.utils.logger import logger
+
+# Мінімальна частка кириличних літер серед усіх літер у тексті поста,
+# нижче якої вважаємо, що модель "зісковзнула" на іншу мову (не українську).
+MIN_CYRILLIC_RATIO = 0.5
+
+
+def _cyrillic_ratio(text: str) -> float:
+    """Повертає частку кириличних літер серед усіх літер у тексті (0.0–1.0)."""
+    letters = [ch for ch in text if ch.isalpha()]
+    if not letters:
+        return 1.0  # немає літер (тільки емодзі/цифри/хештеги) — нема сенсу блокувати
+    cyrillic = [ch for ch in letters if re.match(r'[\u0400-\u04FF]', ch)]
+    return len(cyrillic) / len(letters)
+
 
 def generate_post(article_or_text) -> dict:
     """
@@ -13,7 +28,8 @@ def generate_post(article_or_text) -> dict:
     if isinstance(article_or_text, dict):
         title = article_or_text.get("title", "")
         content = article_or_text.get("content") or article_or_text.get("description") or article_or_text.get("summary", "")
-        url = article_or_text.get("url", "")
+        # Колектори кладуть посилання під ключем 'source_url', тому перевіряємо обидва варіанти.
+        url = article_or_text.get("source_url") or article_or_text.get("url", "")
         user_content = f"Заголовок: {title}\n\nТекст / Опис: {content}\n\nПосилання: {url}".strip()
     elif article_or_text is None:
         user_content = ""
@@ -35,17 +51,33 @@ def generate_post(article_or_text) -> dict:
         except Exception as e:
             logger.warning(f"Не вдалося прочитати prompts/editor.txt: {e}")
 
-    try:
+    def _call_deepseek(extra_user_note: str = "") -> str:
+        content = user_content if not extra_user_note else f"{user_content}\n\n{extra_user_note}"
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content}
+                {"role": "user", "content": content}
             ],
             temperature=0.3
         )
+        return response.choices[0].message.content.strip() if response.choices else ""
 
-        result_text = response.choices[0].message.content.strip() if response.choices else ""
+    try:
+        result_text = _call_deepseek()
+
+        # Перевірка мови: якщо модель відповіла переважно не українською —
+        # пробуємо ще раз з явним нагадуванням, перш ніж здатися.
+        if result_text and _cyrillic_ratio(result_text) < MIN_CYRILLIC_RATIO:
+            logger.warning("Editor: відповідь схожа на не-українську. Повторюємо запит з нагадуванням про мову.")
+            result_text = _call_deepseek(
+                "ВАЖЛИВО: попередня спроба була не українською мовою. "
+                "Перепиши пост ВИКЛЮЧНО українською мовою, без винятків."
+            )
+            if result_text and _cyrillic_ratio(result_text) < MIN_CYRILLIC_RATIO:
+                logger.error("Editor: пост так і не вдалося отримати українською. Пропускаємо публікацію.")
+                return {"text": ""}
+
         return {"text": result_text}
 
     except Exception as e:
