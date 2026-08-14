@@ -9,9 +9,9 @@ def format_post(text: str, article_url: str = "") -> str:
 
     formatted_text = text.strip()
 
-    # Додаємо посилання на джерело у формативанні Markdown, якщо воно є та ще не присутнє в тексті
+    # Додаємо посилання на джерело у форматі Telegram HTML, якщо воно є та ще не присутнє в тексті
     if article_url and article_url not in formatted_text:
-        formatted_text += f"\n\n🔗 [Читати джерело]({article_url})"
+        formatted_text += f'\n\n🔗 <a href="{article_url}">Читати джерело</a>'
 
     return formatted_text
 
