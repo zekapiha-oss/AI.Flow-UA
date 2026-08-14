@@ -12,5 +12,22 @@ if not logger.handlers:
     logger.addHandler(handler)
 
 def get_logger():
-    """Повертає вже налаштований екземпляр логера."""
+    """Повертає екземпляр логера."""
     return logger
+
+# Функції-обгортки для зворотної сумісності з колекторами новин
+def log_info(message: str):
+    """Логування інформаційного повідомлення."""
+    logger.info(message)
+
+def log_error(message: str):
+    """Логування помилки."""
+    logger.error(message)
+
+def log_warning(message: str):
+    """Логування попередження."""
+    logger.warning(message)
+
+def log_debug(message: str):
+    """Логування налагоджувальної інформації."""
+    logger.debug(message)
